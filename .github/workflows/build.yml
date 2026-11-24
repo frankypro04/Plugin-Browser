@@ -1,0 +1,42 @@
+name: Build VST3
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [ main, master ]
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            name: Windows
+          - os: macos-latest
+            name: macOS
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - name: Descargar el codigo
+        uses: actions/checkout@v4
+
+      - name: Configurar
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Compilar
+        run: cmake --build build --config Release --parallel
+
+      - name: Reunir los .vst3
+        shell: bash
+        run: |
+          mkdir -p out
+          find build -name "*.vst3" -print -exec cp -R {} out/ \;
+          ls -la out
+
+      - name: Subir resultado
+        uses: actions/upload-artifact@v4
+        with:
+          name: PluginBrowser-${{ matrix.name }}
+          path: out
